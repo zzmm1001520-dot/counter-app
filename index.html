@@ -2,14 +2,1402 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>计数器</title>
-  <meta http-equiv="refresh" content="0; url=./iphone-counter-tool.html">
-  <link rel="canonical" href="./iphone-counter-tool.html">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>iPhone 计数工具</title>
+  <meta name="description" content="适用于苹果手机的多计数器工具，支持加减、改名、明细和离线使用。">
+  <meta property="og:title" content="计数器">
+  <meta property="og:description" content="轻点计数，支持多个计数器、明细管理和离线使用。">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#f6f7fb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="计数器">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icons/icon-180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #18212f;
+      --muted: #677285;
+      --line: rgba(24, 33, 47, 0.12);
+      --paper: #f6f7fb;
+      --surface: rgba(255, 255, 255, 0.82);
+      --accent: #1d7f78;
+      --accent-soft: #dff3ef;
+      --danger: #df4e51;
+      --danger-soft: #ffe8e8;
+      --gold: #f0bd4e;
+      --shadow: 0 22px 70px rgba(20, 31, 53, 0.16);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 18% 8%, rgba(240, 189, 78, 0.18), transparent 28%),
+        linear-gradient(155deg, #f4f8fb 0%, #fafafa 46%, #eef7f5 100%);
+      overflow: hidden;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .app {
+      position: relative;
+      width: min(100%, 430px);
+      height: min(100dvh - 36px, 900px);
+      min-height: 640px;
+      border: 1px solid rgba(24, 33, 47, 0.1);
+      border-radius: 36px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .app::before {
+      position: absolute;
+      top: 11px;
+      left: 50%;
+      width: 118px;
+      height: 31px;
+      border-radius: 999px;
+      background: #131823;
+      transform: translateX(-50%);
+      content: "";
+      z-index: 5;
+    }
+
+    .screen {
+      position: relative;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      width: 100%;
+      height: 100%;
+      padding: calc(env(safe-area-inset-top) + 52px) 18px calc(env(safe-area-inset-bottom) + 18px);
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 48px 1fr 48px;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .icon-button {
+      display: grid;
+      place-items: center;
+      width: 48px;
+      height: 48px;
+      border-radius: 18px;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+
+    .icon-button:active {
+      transform: scale(0.96);
+    }
+
+    .icon-button svg {
+      width: 22px;
+      height: 22px;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .title {
+      min-width: 0;
+      text-align: center;
+    }
+
+    .title input {
+      width: 100%;
+      border: 0;
+      outline: 0;
+      color: var(--ink);
+      background: transparent;
+      text-align: center;
+      font-size: clamp(18px, 5.2vw, 24px);
+      font-weight: 750;
+      letter-spacing: 0;
+    }
+
+    .title small {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .counter-strip {
+      display: flex;
+      gap: 8px;
+      margin: 18px -18px 0;
+      padding: 0 18px 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .counter-strip::-webkit-scrollbar {
+      display: none;
+    }
+
+    .counter-pill {
+      flex: 0 0 auto;
+      max-width: 170px;
+      height: 38px;
+      padding: 0 13px;
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.64);
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-size: 14px;
+      font-weight: 720;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .counter-pill.active {
+      color: #0d5f59;
+      background: var(--accent-soft);
+      box-shadow: inset 0 0 0 1px rgba(29, 127, 120, 0.22);
+    }
+
+    .counter-pill:active {
+      transform: scale(0.97);
+    }
+
+    .tap-area {
+      position: relative;
+      display: grid;
+      place-items: center;
+      margin: 16px 0 14px;
+      border-radius: 28px;
+      cursor: pointer;
+      background:
+        linear-gradient(160deg, rgba(255, 255, 255, 0.9), rgba(244, 248, 249, 0.62)),
+        radial-gradient(circle at 80% 18%, rgba(29, 127, 120, 0.16), transparent 28%);
+      box-shadow: inset 0 0 0 1px rgba(24, 33, 47, 0.09);
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .tap-area::after {
+      position: absolute;
+      right: -42px;
+      bottom: -42px;
+      width: 148px;
+      height: 148px;
+      border: 24px solid rgba(240, 189, 78, 0.24);
+      border-radius: 50%;
+      content: "";
+    }
+
+    .count-wrap {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      justify-items: center;
+      padding: 32px 44px;
+      text-align: center;
+    }
+
+    .count-line {
+      position: relative;
+      display: inline-flex;
+      align-items: flex-start;
+      justify-content: center;
+      max-width: 100%;
+      min-width: 0;
+    }
+
+    .count {
+      min-width: 0;
+      max-width: 100%;
+      font-size: clamp(84px, 28vw, 144px);
+      font-weight: 820;
+      line-height: 0.94;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      font-variant-numeric: tabular-nums;
+      border-radius: 24px;
+      padding: 0 12px;
+    }
+
+    .count:focus-visible {
+      outline: 3px solid rgba(29, 127, 120, 0.28);
+      outline-offset: 6px;
+    }
+
+    .edit-value-button {
+      position: absolute;
+      top: 18%;
+      right: -26px;
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      color: rgba(13, 95, 89, 0.76);
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: inset 0 0 0 1px rgba(29, 127, 120, 0.16), 0 8px 22px rgba(24, 33, 47, 0.08);
+      backdrop-filter: blur(10px);
+      opacity: 0.86;
+    }
+
+    .edit-value-button:active {
+      transform: scale(0.94);
+    }
+
+    .edit-value-button svg {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+      stroke-width: 2.45;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .pulse {
+      animation: pulse 180ms ease-out;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+      }
+      55% {
+        transform: scale(1.045);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    .detail-zone {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      justify-items: start;
+      align-content: start;
+      gap: 14px;
+      width: min(100%, 324px);
+      margin-top: 24px;
+      padding: 4px 2px 8px;
+    }
+
+    .detail-strip::-webkit-scrollbar {
+      display: none;
+    }
+
+    .detail-strip {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+      width: 100%;
+      max-height: 154px;
+      padding: 0 2px 2px 0;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+
+    .detail-strip:empty {
+      display: none;
+    }
+
+    .detail-add,
+    .detail-chip {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 38px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 760;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .detail-add {
+      gap: 6px;
+      height: 40px;
+      padding: 0 15px;
+      color: #0d5f59;
+      background: #e4f5f1;
+      box-shadow: inset 0 0 0 1px rgba(29, 127, 120, 0.18), 0 7px 18px rgba(29, 127, 120, 0.08);
+    }
+
+    .detail-add svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+    }
+
+    .detail-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      min-height: 50px;
+      padding: 4px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.78);
+      box-shadow: inset 0 0 0 1px rgba(24, 33, 47, 0.09), 0 8px 24px rgba(24, 33, 47, 0.06);
+    }
+
+    .detail-item.active {
+      background: #e4f5f1;
+      box-shadow: inset 0 0 0 1px rgba(29, 127, 120, 0.2), 0 8px 24px rgba(29, 127, 120, 0.08);
+    }
+
+    .detail-chip {
+      justify-content: space-between;
+      gap: 12px;
+      width: 100%;
+      max-width: none;
+      height: 42px;
+      padding: 0 10px 0 12px;
+      color: var(--muted);
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .detail-chip.active {
+      color: #0d5f59;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .detail-chip span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .detail-chip b {
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .detail-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding-right: 3px;
+    }
+
+    .detail-action {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      color: #0d5f59;
+      background: #ffffff;
+      box-shadow: inset 0 0 0 1px rgba(29, 127, 120, 0.15), 0 4px 12px rgba(24, 33, 47, 0.07);
+    }
+
+    .detail-action.danger {
+      color: #b43438;
+      background: #fff1f1;
+      box-shadow: inset 0 0 0 1px rgba(180, 52, 56, 0.14), 0 4px 12px rgba(180, 52, 56, 0.06);
+    }
+
+    .detail-action svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      stroke-width: 2.1;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .detail-add:active,
+    .detail-chip:active,
+    .detail-action:active {
+      transform: scale(0.97);
+    }
+
+    .quick-row {
+      display: grid;
+      grid-template-columns: 76px 1fr 76px;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .minus-zone {
+      display: grid;
+      place-items: center;
+      width: 76px;
+      height: 76px;
+      border-radius: 24px;
+      color: #a92d31;
+      background: var(--danger-soft);
+      box-shadow: inset 0 0 0 1px rgba(223, 78, 81, 0.16);
+    }
+
+    .minus-zone svg {
+      width: 31px;
+      height: 31px;
+      stroke: currentColor;
+      stroke-width: 2.8;
+      stroke-linecap: round;
+    }
+
+    .mini-stat {
+      display: grid;
+      align-content: center;
+      min-height: 76px;
+      border-radius: 24px;
+      padding: 0 16px;
+      background: var(--surface);
+      box-shadow: inset 0 0 0 1px var(--line);
+      overflow: hidden;
+    }
+
+    .mini-stat strong {
+      font-size: 15px;
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .mini-stat span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      margin-top: 5px;
+    }
+
+    .reset-button {
+      display: grid;
+      place-items: center;
+      width: 76px;
+      height: 76px;
+      border-radius: 24px;
+      color: #7d5a06;
+      background: #fff5d8;
+      box-shadow: inset 0 0 0 1px rgba(240, 189, 78, 0.22);
+    }
+
+    .reset-button svg {
+      width: 28px;
+      height: 28px;
+      stroke: currentColor;
+      stroke-width: 2.35;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .sheet-backdrop {
+      position: absolute;
+      inset: 0;
+      display: none;
+      background: rgba(15, 20, 29, 0.2);
+      z-index: 10;
+    }
+
+    .sheet-backdrop.open {
+      display: block;
+    }
+
+    .sheet {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      left: 10px;
+      max-height: min(70%, 570px);
+      padding: 10px;
+      border: 1px solid rgba(24, 33, 47, 0.1);
+      border-radius: 30px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 0 22px 70px rgba(15, 20, 29, 0.2);
+      transform: translateY(calc(100% + 20px));
+      transition: transform 220ms ease;
+      z-index: 11;
+    }
+
+    .sheet.open {
+      transform: translateY(0);
+    }
+
+    .sheet-head {
+      display: grid;
+      grid-template-columns: 44px 1fr 44px;
+      align-items: center;
+      padding: 6px 4px 12px;
+    }
+
+    .sheet-head h2 {
+      margin: 0;
+      text-align: center;
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+
+    .sheet-close {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 16px;
+      color: var(--muted);
+      background: transparent;
+    }
+
+    .sheet-close svg {
+      width: 21px;
+      height: 21px;
+      stroke: currentColor;
+      stroke-width: 2.4;
+      stroke-linecap: round;
+    }
+
+    .counter-list {
+      display: grid;
+      gap: 8px;
+      max-height: 340px;
+      overflow: auto;
+      padding: 0 2px 6px;
+    }
+
+    .counter-item {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      align-items: center;
+      gap: 8px;
+      min-height: 62px;
+      padding: 8px 8px 8px 14px;
+      border-radius: 20px;
+      background: #f7f9fb;
+      box-shadow: inset 0 0 0 1px rgba(24, 33, 47, 0.08);
+    }
+
+    .counter-item.active {
+      background: var(--accent-soft);
+    }
+
+    .counter-meta {
+      min-width: 0;
+    }
+
+    .counter-meta b,
+    .counter-meta span {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .counter-meta b {
+      font-size: 15px;
+      line-height: 1.2;
+    }
+
+    .counter-meta span {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .item-action {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 15px;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: inset 0 0 0 1px rgba(24, 33, 47, 0.08);
+    }
+
+    .item-action svg {
+      width: 19px;
+      height: 19px;
+      stroke: currentColor;
+      stroke-width: 2.25;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .item-action.danger {
+      color: #b43438;
+    }
+
+    .dialog {
+      position: absolute;
+      inset: auto 18px calc(env(safe-area-inset-bottom) + 118px);
+      display: none;
+      padding: 14px;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 24px 80px rgba(15, 20, 29, 0.24);
+      z-index: 20;
+    }
+
+    .dialog.open {
+      display: block;
+    }
+
+    .dialog h2 {
+      margin: 4px 4px 12px;
+      font-size: 17px;
+    }
+
+    .dialog input {
+      width: 100%;
+      height: 48px;
+      border: 1px solid rgba(24, 33, 47, 0.12);
+      border-radius: 16px;
+      padding: 0 14px;
+      outline: 0;
+      color: var(--ink);
+      background: #f8fafb;
+      font-size: 16px;
+      font-weight: 650;
+    }
+
+    .dialog input + input {
+      margin-top: 10px;
+    }
+
+    .dialog-message {
+      margin: 2px 4px 4px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 620;
+      line-height: 1.55;
+    }
+
+    .dialog-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .dialog-actions button {
+      height: 48px;
+      border-radius: 16px;
+      font-size: 15px;
+      font-weight: 780;
+    }
+
+    .secondary {
+      color: var(--muted);
+      background: #eef1f4;
+    }
+
+    .primary {
+      color: white;
+      background: var(--accent);
+    }
+
+    .primary.danger {
+      background: #b43438;
+    }
+
+    @media (max-width: 460px) {
+      body {
+        display: block;
+        padding: 0;
+        overflow: hidden;
+      }
+
+      .app {
+        width: 100%;
+        height: 100dvh;
+        min-height: 0;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .app::before {
+        display: none;
+      }
+
+      .screen {
+        padding-top: calc(env(safe-area-inset-top) + 14px);
+      }
+
+      .tap-area {
+        border-radius: 26px;
+      }
+    }
+
+    @media (max-height: 700px) {
+      .screen {
+        grid-template-rows: auto auto minmax(260px, 1fr) auto;
+      }
+
+      .count-wrap {
+        padding: 26px 40px;
+      }
+
+      .quick-row {
+        grid-template-columns: 66px 1fr 66px;
+        gap: 10px;
+      }
+
+      .minus-zone,
+      .reset-button {
+        width: 66px;
+        height: 66px;
+        border-radius: 22px;
+      }
+
+      .mini-stat {
+        min-height: 66px;
+      }
+    }
+  </style>
 </head>
 <body>
+  <main class="app" aria-label="计数工具">
+    <section class="screen">
+      <header class="topbar">
+        <button class="icon-button" id="openList" type="button" aria-label="计数器列表">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>
+        </button>
+        <div class="title">
+          <input id="nameInput" maxlength="18" aria-label="当前计数器名称">
+          <small id="counterIndex"></small>
+        </div>
+        <button class="icon-button" id="addCounter" type="button" aria-label="新增计数器">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+        </button>
+      </header>
+
+      <nav class="counter-strip" id="counterStrip" aria-label="计数器切换"></nav>
+
+      <div class="tap-area" id="tapArea" role="button" tabindex="0" aria-label="加一">
+        <span class="count-wrap">
+          <span class="count-line">
+            <strong class="count" id="countValue">0</strong>
+            <button class="edit-value-button" id="editValueButton" type="button" aria-label="编辑当前数字">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+            </button>
+          </span>
+          <span class="detail-zone" id="detailZone" aria-label="明细计数">
+            <button class="detail-add" id="addDetailButton" type="button" aria-label="新增明细">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+              <span id="addDetailLabel">新增</span>
+            </button>
+            <span class="detail-strip" id="detailStrip"></span>
+          </span>
+        </span>
+      </div>
+
+      <div class="quick-row">
+        <button class="minus-zone" id="minusButton" type="button" aria-label="减一">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg>
+        </button>
+        <div class="mini-stat">
+          <strong id="activeName"></strong>
+          <span id="activeMeta"></span>
+        </div>
+        <button class="reset-button" id="resetButton" type="button" aria-label="归零">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v6h6"></path></svg>
+        </button>
+      </div>
+    </section>
+
+    <div class="sheet-backdrop" id="sheetBackdrop"></div>
+    <aside class="sheet" id="counterSheet" aria-label="计数器管理">
+      <div class="sheet-head">
+        <span></span>
+        <h2>计数器</h2>
+        <button class="sheet-close" id="closeList" type="button" aria-label="关闭">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+        </button>
+      </div>
+      <div class="counter-list" id="counterList"></div>
+    </aside>
+
+    <form class="dialog" id="nameDialog">
+      <h2 id="dialogTitle">新增计数器</h2>
+      <p class="dialog-message" id="dialogMessage" hidden></p>
+      <input id="dialogInput" maxlength="18" autocomplete="off" aria-label="计数器名称">
+      <input id="dialogValueInput" type="number" step="1" inputmode="numeric" placeholder="数字" aria-label="明细数字" hidden>
+      <div class="dialog-actions">
+        <button class="secondary" id="cancelDialog" type="button">取消</button>
+        <button class="primary" id="submitDialog" type="submit">完成</button>
+      </div>
+    </form>
+  </main>
+
   <script>
-    location.replace("./iphone-counter-tool.html");
+    const storageKey = "iphone-counter-tool-v1";
+    const fallbackCounters = [
+      { id: makeId(), name: "日常计数", value: 0, details: [], activeDetailId: null },
+    ];
+
+    const state = loadState();
+    let dialogMode = "create";
+    let editingId = null;
+
+    const els = {
+      nameInput: document.querySelector("#nameInput"),
+      counterIndex: document.querySelector("#counterIndex"),
+      counterStrip: document.querySelector("#counterStrip"),
+      tapArea: document.querySelector("#tapArea"),
+      countValue: document.querySelector("#countValue"),
+      editValueButton: document.querySelector("#editValueButton"),
+      detailZone: document.querySelector("#detailZone"),
+      addDetailButton: document.querySelector("#addDetailButton"),
+      addDetailLabel: document.querySelector("#addDetailLabel"),
+      detailStrip: document.querySelector("#detailStrip"),
+      minusButton: document.querySelector("#minusButton"),
+      resetButton: document.querySelector("#resetButton"),
+      activeName: document.querySelector("#activeName"),
+      activeMeta: document.querySelector("#activeMeta"),
+      openList: document.querySelector("#openList"),
+      closeList: document.querySelector("#closeList"),
+      addCounter: document.querySelector("#addCounter"),
+      sheetBackdrop: document.querySelector("#sheetBackdrop"),
+      counterSheet: document.querySelector("#counterSheet"),
+      counterList: document.querySelector("#counterList"),
+      nameDialog: document.querySelector("#nameDialog"),
+      dialogTitle: document.querySelector("#dialogTitle"),
+      dialogMessage: document.querySelector("#dialogMessage"),
+      dialogInput: document.querySelector("#dialogInput"),
+      dialogValueInput: document.querySelector("#dialogValueInput"),
+      cancelDialog: document.querySelector("#cancelDialog"),
+      submitDialog: document.querySelector("#submitDialog"),
+    };
+
+    let valueHoldTimer = null;
+    let suppressNextTapIncrement = false;
+
+    function loadState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey));
+        if (saved?.counters?.length) return normalizeState(saved);
+      } catch (error) {
+        localStorage.removeItem(storageKey);
+      }
+      return { counters: fallbackCounters, activeId: fallbackCounters[0].id };
+    }
+
+    function normalizeState(saved) {
+      const counters = saved.counters.map((counter, index) => normalizeCounter(counter, index));
+      const activeId = counters.some((counter) => counter.id === saved.activeId) ? saved.activeId : counters[0].id;
+      return { counters, activeId };
+    }
+
+    function normalizeCounter(counter, index) {
+      const details = Array.isArray(counter.details)
+        ? counter.details.map((detail, detailIndex) => normalizeDetail(detail, detailIndex)).filter(Boolean)
+        : [];
+      const activeDetailId = details.some((detail) => detail.id === counter.activeDetailId) ? counter.activeDetailId : null;
+      return {
+        id: counter.id || makeId(),
+        name: normalizeName(String(counter.name || ""), `计数器 ${index + 1}`),
+        value: toSafeInteger(counter.value, 0),
+        details,
+        activeDetailId,
+      };
+    }
+
+    function normalizeDetail(detail, index) {
+      if (!detail) return null;
+      return {
+        id: detail.id || makeId(),
+        name: normalizeName(String(detail.name || ""), `明细 ${index + 1}`),
+        value: toSafeInteger(detail.value, 0),
+        createdAt: detail.createdAt || new Date().toISOString(),
+      };
+    }
+
+    function saveState() {
+      localStorage.setItem(storageKey, JSON.stringify(state));
+    }
+
+    function currentCounter() {
+      return state.counters.find((counter) => counter.id === state.activeId) || state.counters[0];
+    }
+
+    function currentDetail(counter = currentCounter()) {
+      return counter.details.find((detail) => detail.id === counter.activeDetailId) || null;
+    }
+
+    function setActive(id) {
+      state.activeId = id;
+      saveState();
+      render();
+    }
+
+    function changeValue(delta) {
+      const counter = currentCounter();
+      const detail = currentDetail(counter);
+      counter.value += delta;
+      if (detail) detail.value += delta;
+      saveState();
+      render();
+      pulseCount();
+    }
+
+    function changeDetailValue(id, delta) {
+      const counter = currentCounter();
+      const detail = counter.details.find((item) => item.id === id);
+      if (!detail) return;
+      counter.activeDetailId = id;
+      counter.value += delta;
+      detail.value += delta;
+      saveState();
+      render();
+      pulseCount();
+    }
+
+    function pulseCount() {
+      els.countValue.classList.remove("pulse");
+      requestAnimationFrame(() => els.countValue.classList.add("pulse"));
+    }
+
+    function openSheet() {
+      els.sheetBackdrop.classList.add("open");
+      els.counterSheet.classList.add("open");
+    }
+
+    function closeSheet() {
+      els.sheetBackdrop.classList.remove("open");
+      els.counterSheet.classList.remove("open");
+    }
+
+    function openDialog(mode, item = null) {
+      dialogMode = mode;
+      editingId = item?.id || null;
+      els.dialogMessage.hidden = true;
+      els.dialogInput.hidden = false;
+      els.dialogValueInput.hidden = true;
+      els.submitDialog.textContent = "完成";
+      els.submitDialog.classList.remove("danger");
+      if (mode === "value") {
+        els.dialogTitle.textContent = "编辑数字";
+        els.dialogInput.value = String(currentCounter().value);
+        els.dialogInput.inputMode = "numeric";
+        els.dialogInput.ariaLabel = "当前数字";
+      } else if (mode === "edit-detail") {
+        els.dialogTitle.textContent = "编辑明细";
+        els.dialogInput.value = item?.name || "";
+        els.dialogInput.inputMode = "text";
+        els.dialogInput.ariaLabel = "明细名称";
+        els.dialogValueInput.value = String(item?.value ?? 0);
+        els.dialogValueInput.hidden = false;
+      } else if (mode === "delete-detail") {
+        els.dialogTitle.textContent = "删除明细";
+        els.dialogMessage.textContent = `确定删除“${item?.name || "这个明细"}”及它的计数吗？`;
+        els.dialogMessage.hidden = false;
+        els.dialogInput.hidden = true;
+        els.submitDialog.textContent = "删除";
+        els.submitDialog.classList.add("danger");
+      } else {
+        els.dialogTitle.textContent = mode === "rename" ? "重命名" : "新增计数器";
+        els.dialogInput.value = item?.name || nextCounterName();
+        els.dialogInput.inputMode = "text";
+        els.dialogInput.ariaLabel = "计数器名称";
+      }
+      els.nameDialog.classList.add("open");
+      if (!els.dialogInput.hidden) {
+        setTimeout(() => {
+          els.dialogInput.focus();
+          els.dialogInput.select();
+        }, 40);
+      }
+    }
+
+    function closeDialog() {
+      els.nameDialog.classList.remove("open");
+      editingId = null;
+    }
+
+    function nextCounterName() {
+      return `计数器 ${state.counters.length + 1}`;
+    }
+
+    function makeId() {
+      if (globalThis.crypto?.randomUUID) return crypto.randomUUID();
+      return `counter-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function toSafeInteger(value, fallback) {
+      const nextValue = Number.parseInt(value, 10);
+      if (!Number.isFinite(nextValue)) return fallback;
+      return Math.max(Number.MIN_SAFE_INTEGER, Math.min(Number.MAX_SAFE_INTEGER, nextValue));
+    }
+
+    function createCounter(name) {
+      const cleanName = normalizeName(name, nextCounterName());
+      const counter = { id: makeId(), name: cleanName, value: 0, details: [], activeDetailId: null };
+      state.counters.push(counter);
+      state.activeId = counter.id;
+      saveState();
+      render();
+    }
+
+    function createDetail() {
+      const counter = currentCounter();
+      const detail = {
+        id: makeId(),
+        name: nextDetailName(counter),
+        value: 0,
+        createdAt: new Date().toISOString(),
+      };
+      counter.details.push(detail);
+      counter.activeDetailId = detail.id;
+      saveState();
+      render();
+    }
+
+    function nextDetailName(counter) {
+      const baseName = todayDetailName();
+      const sameDayCount = counter.details.filter((detail) => detail.name === baseName || detail.name.startsWith(`${baseName} `)).length;
+      return sameDayCount ? `${baseName} ${sameDayCount + 1}` : baseName;
+    }
+
+    function todayDetailName() {
+      const now = new Date();
+      return `${now.getMonth() + 1}月${now.getDate()}日`;
+    }
+
+    function renameCounter(id, name) {
+      const counter = state.counters.find((item) => item.id === id);
+      if (!counter) return;
+      counter.name = normalizeName(name, counter.name);
+      saveState();
+      render();
+    }
+
+    function editDetail(id, name, value) {
+      const counter = currentCounter();
+      const detail = counter.details.find((item) => item.id === id);
+      if (!detail) return;
+      detail.name = normalizeName(name, detail.name);
+      detail.value = toSafeInteger(value, detail.value);
+      saveState();
+      render();
+    }
+
+    function deleteDetail(id) {
+      const counter = currentCounter();
+      const index = counter.details.findIndex((detail) => detail.id === id);
+      if (index < 0) return;
+      counter.details.splice(index, 1);
+      if (counter.activeDetailId === id) {
+        counter.activeDetailId = counter.details[Math.min(index, counter.details.length - 1)]?.id || null;
+      }
+      saveState();
+      render();
+    }
+
+    function normalizeName(value, fallback) {
+      return value.trim().replace(/\s+/g, " ") || fallback;
+    }
+
+    function deleteCounter(id) {
+      if (state.counters.length === 1) {
+        const counter = currentCounter();
+        counter.value = 0;
+        saveState();
+        render();
+        return;
+      }
+      const index = state.counters.findIndex((counter) => counter.id === id);
+      state.counters = state.counters.filter((counter) => counter.id !== id);
+      if (state.activeId === id) {
+        state.activeId = state.counters[Math.max(0, index - 1)].id;
+      }
+      saveState();
+      render();
+    }
+
+    function resetCurrent() {
+      const counter = currentCounter();
+      counter.value = 0;
+      counter.details.forEach((detail) => {
+        detail.value = 0;
+      });
+      saveState();
+      render();
+      pulseCount();
+    }
+
+    function setCurrentValue(value) {
+      currentCounter().value = toSafeInteger(value, currentCounter().value);
+      saveState();
+      render();
+      pulseCount();
+    }
+
+    function render() {
+      const active = currentCounter();
+      const activeDetail = currentDetail(active);
+      const activeIndex = state.counters.findIndex((counter) => counter.id === active.id) + 1;
+
+      els.nameInput.value = active.name;
+      els.counterIndex.textContent = `${activeIndex} / ${state.counters.length}`;
+      els.countValue.textContent = active.value;
+      els.activeName.textContent = active.name;
+      els.activeMeta.textContent = activeDetail
+        ? `总计 ${active.value} · ${activeDetail.name} ${activeDetail.value}`
+        : `当前值 ${active.value}`;
+
+      els.counterStrip.replaceChildren(
+        ...state.counters.map((counter) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `counter-pill${counter.id === active.id ? " active" : ""}`;
+          button.textContent = counter.name;
+          button.ariaLabel = counter.name;
+          button.addEventListener("click", () => setActive(counter.id));
+          return button;
+        }),
+      );
+
+      els.detailStrip.replaceChildren(
+        ...active.details.map((detail) => {
+          const item = document.createElement("span");
+          item.className = `detail-item${detail.id === active.activeDetailId ? " active" : ""}`;
+
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `detail-chip${detail.id === active.activeDetailId ? " active" : ""}`;
+          button.ariaLabel = `${detail.name}，当前值 ${detail.value}，点按加一`;
+          button.addEventListener("click", (event) => {
+            event.stopPropagation();
+            changeDetailValue(detail.id, 1);
+          });
+
+          const name = document.createElement("span");
+          name.textContent = detail.name;
+          const value = document.createElement("b");
+          value.textContent = detail.value;
+          button.append(name, value);
+
+          const actions = document.createElement("span");
+          actions.className = "detail-actions";
+
+          const rename = document.createElement("button");
+          rename.type = "button";
+          rename.className = "detail-action";
+          rename.ariaLabel = `编辑${detail.name}`;
+          rename.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17l-1 3Z"></path><path d="m13.5 8.5 3 3"></path></svg>';
+          rename.addEventListener("click", (event) => {
+            event.stopPropagation();
+            openDialog("edit-detail", detail);
+          });
+
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.className = "detail-action danger";
+          remove.ariaLabel = `删除${detail.name}`;
+          remove.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="m6 7 1 13h10l1-13"></path><path d="M10 11v5M14 11v5"></path></svg>';
+          remove.addEventListener("click", (event) => {
+            event.stopPropagation();
+            openDialog("delete-detail", detail);
+          });
+
+          actions.append(rename, remove);
+          item.append(button, actions);
+          return item;
+        }),
+      );
+
+      els.counterList.replaceChildren(
+        ...state.counters.map((counter) => {
+          const item = document.createElement("div");
+          item.className = `counter-item${counter.id === active.id ? " active" : ""}`;
+
+          const meta = document.createElement("button");
+          meta.type = "button";
+          meta.className = "counter-meta";
+          meta.style.background = "transparent";
+          meta.style.textAlign = "left";
+          meta.addEventListener("click", () => {
+            setActive(counter.id);
+            closeSheet();
+          });
+
+          const name = document.createElement("b");
+          name.textContent = counter.name;
+          const value = document.createElement("span");
+          value.textContent = `当前值 ${counter.value}`;
+          meta.append(name, value);
+
+          const rename = document.createElement("button");
+          rename.type = "button";
+          rename.className = "item-action";
+          rename.ariaLabel = "重命名";
+          rename.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>';
+          rename.addEventListener("click", () => openDialog("rename", counter));
+
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.className = "item-action danger";
+          remove.ariaLabel = "删除";
+          remove.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v5"></path><path d="M14 11v5"></path></svg>';
+          remove.addEventListener("click", () => deleteCounter(counter.id));
+
+          item.append(meta, rename, remove);
+          return item;
+        }),
+      );
+    }
+
+    els.tapArea.addEventListener("click", () => {
+      if (suppressNextTapIncrement) {
+        suppressNextTapIncrement = false;
+        return;
+      }
+      changeValue(1);
+    });
+    els.tapArea.addEventListener("keydown", (event) => {
+      if (event.target === els.tapArea && (event.key === "Enter" || event.key === " ")) {
+        event.preventDefault();
+        changeValue(1);
+      }
+    });
+    els.editValueButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      openDialog("value");
+    });
+    els.detailZone.addEventListener("click", (event) => {
+      event.stopPropagation();
+    });
+    els.addDetailButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      createDetail();
+    });
+    els.countValue.addEventListener("pointerdown", () => {
+      clearTimeout(valueHoldTimer);
+      valueHoldTimer = setTimeout(() => {
+        suppressNextTapIncrement = true;
+        setTimeout(() => {
+          suppressNextTapIncrement = false;
+        }, 800);
+        openDialog("value");
+      }, 520);
+    });
+    ["pointerup", "pointercancel", "pointerleave"].forEach((eventName) => {
+      els.countValue.addEventListener(eventName, () => clearTimeout(valueHoldTimer));
+    });
+    els.minusButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      changeValue(-1);
+    });
+    els.resetButton.addEventListener("click", resetCurrent);
+    els.openList.addEventListener("click", openSheet);
+    els.closeList.addEventListener("click", closeSheet);
+    els.sheetBackdrop.addEventListener("click", closeSheet);
+    els.addCounter.addEventListener("click", () => openDialog("create"));
+    els.cancelDialog.addEventListener("click", closeDialog);
+    els.nameInput.addEventListener("change", () => renameCounter(currentCounter().id, els.nameInput.value));
+    els.nameInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        els.nameInput.blur();
+      }
+    });
+
+    els.nameDialog.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (dialogMode === "rename") {
+        renameCounter(editingId, els.dialogInput.value);
+      } else if (dialogMode === "edit-detail") {
+        editDetail(editingId, els.dialogInput.value, els.dialogValueInput.value);
+      } else if (dialogMode === "delete-detail") {
+        deleteDetail(editingId);
+      } else if (dialogMode === "value") {
+        setCurrentValue(els.dialogInput.value);
+      } else {
+        createCounter(els.dialogInput.value);
+      }
+      closeDialog();
+      closeSheet();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        closeDialog();
+        closeSheet();
+      }
+      if (event.key === " " && document.activeElement === document.body) {
+        event.preventDefault();
+        changeValue(1);
+      }
+    });
+
+    if ("serviceWorker" in navigator) {
+      const hadServiceWorkerController = Boolean(navigator.serviceWorker.controller);
+      let refreshedForUpdate = false;
+
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (!hadServiceWorkerController || refreshedForUpdate) return;
+        refreshedForUpdate = true;
+        window.location.reload();
+      });
+
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./service-worker.js", { updateViaCache: "none" }).then((registration) => {
+          navigator.serviceWorker.ready.then((readyRegistration) => {
+            readyRegistration.active?.postMessage({ type: "CACHE_OFFLINE_PAGE" });
+          }).catch(() => {});
+          if (!navigator.onLine) return;
+          window.setTimeout(() => registration.update().catch(() => {}), 1500);
+        }).catch(() => {});
+      });
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState !== "visible" || !navigator.onLine) return;
+        navigator.serviceWorker.getRegistration().then((registration) => registration?.update()).catch(() => {});
+      });
+    }
+
+    render();
   </script>
 </body>
 </html>
