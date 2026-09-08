@@ -245,11 +245,13 @@
     .count {
       min-width: 0;
       max-width: 100%;
-      font-size: clamp(84px, 28vw, 144px);
+      font-size: 144px;
       font-weight: 820;
       line-height: 0.94;
       letter-spacing: 0;
-      overflow-wrap: anywhere;
+      white-space: nowrap;
+      overflow-wrap: normal;
+      word-break: normal;
       font-variant-numeric: tabular-nums;
       border-radius: 24px;
       padding: 0 12px;
@@ -1173,6 +1175,25 @@
       pulseCount();
     }
 
+    function fitCountValue() {
+      const count = els.countValue;
+      const wrap = count.closest(".count-wrap");
+      if (!wrap) return;
+
+      const wrapStyle = getComputedStyle(wrap);
+      const horizontalPadding = parseFloat(wrapStyle.paddingLeft) + parseFloat(wrapStyle.paddingRight);
+      const availableWidth = Math.max(1, wrap.clientWidth - horizontalPadding);
+      const maxFontSize = 144;
+      const minFontSize = 24;
+
+      count.style.fontSize = `${maxFontSize}px`;
+      const naturalWidth = count.scrollWidth;
+      if (naturalWidth > availableWidth) {
+        const fittedSize = Math.floor(maxFontSize * availableWidth / naturalWidth);
+        count.style.fontSize = `${Math.max(minFontSize, fittedSize)}px`;
+      }
+    }
+
     function render() {
       const active = currentCounter();
       const activeDetail = currentDetail(active);
@@ -1181,6 +1202,7 @@
       els.nameInput.value = active.name;
       els.counterIndex.textContent = `${activeIndex} / ${state.counters.length}`;
       els.countValue.textContent = active.value;
+      fitCountValue();
       els.activeName.textContent = active.name;
       els.activeMeta.textContent = activeDetail
         ? `总计 ${active.value} · ${activeDetail.name} ${activeDetail.value}`
@@ -1322,6 +1344,8 @@
         openDialog("value");
       }, 520);
     });
+
+    window.addEventListener("resize", fitCountValue);
     ["pointerup", "pointercancel", "pointerleave"].forEach((eventName) => {
       els.countValue.addEventListener(eventName, () => clearTimeout(valueHoldTimer));
     });
