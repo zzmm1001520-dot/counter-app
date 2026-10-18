@@ -1,4 +1,4 @@
-const CACHE_NAME = "counter-app-v9";
+const CACHE_NAME = "counter-app-v11";
 const OFFLINE_PAGE = "./index.html";
 
 async function cacheOfflinePage() {

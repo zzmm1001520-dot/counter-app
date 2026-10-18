@@ -139,15 +139,18 @@
       text-align: center;
     }
 
-    .title input {
+    .title button {
       width: 100%;
+      min-height: 28px;
       border: 0;
-      outline: 0;
+      padding: 0;
       color: var(--ink);
       background: transparent;
       text-align: center;
-      font-size: clamp(18px, 5.2vw, 24px);
+      font-size: 22px;
       font-weight: 750;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
       letter-spacing: 0;
     }
 
@@ -670,23 +673,38 @@
     }
 
     .dialog {
-      position: absolute;
-      inset: auto 18px calc(env(safe-area-inset-bottom) + 118px);
+      position: fixed;
+      inset: auto;
+      top: calc(var(--dialog-viewport-top, 0px) + var(--dialog-viewport-height, 100dvh) / 2);
+      left: 50%;
       display: none;
+      width: min(394px, calc(100vw - 36px));
+      max-height: calc(var(--dialog-viewport-height, 100dvh) - 24px);
+      margin: 0;
+      border: 1px solid var(--line);
       padding: 14px;
       border-radius: 24px;
+      color: var(--ink);
       background: rgba(255, 255, 255, 0.96);
       box-shadow: 0 24px 80px rgba(15, 20, 29, 0.24);
+      transform: translate(-50%, -50%);
+      overflow-y: auto;
+      overscroll-behavior: contain;
       z-index: 20;
     }
 
-    .dialog.open {
+    .dialog[open] {
       display: block;
+    }
+
+    .dialog::backdrop {
+      background: rgba(24, 33, 47, 0.3);
     }
 
     .dialog h2 {
       margin: 4px 4px 12px;
       font-size: 17px;
+      outline: none;
     }
 
     .dialog input {
@@ -806,7 +824,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>
         </button>
         <div class="title">
-          <input id="nameInput" maxlength="18" aria-label="当前计数器名称">
+          <button id="nameInput" type="button" aria-label="编辑计数器名称"></button>
           <small id="counterIndex"></small>
         </div>
         <button class="icon-button" id="addCounter" type="button" aria-label="新增计数器">
@@ -860,8 +878,9 @@
       <div class="counter-list" id="counterList"></div>
     </aside>
 
-    <form class="dialog" id="nameDialog">
-      <h2 id="dialogTitle">新增计数器</h2>
+    <dialog class="dialog" id="nameDialog" aria-labelledby="dialogTitle">
+      <form id="dialogForm">
+      <h2 id="dialogTitle" tabindex="-1" autofocus>新增计数器</h2>
       <p class="dialog-message" id="dialogMessage" hidden></p>
       <input id="dialogInput" maxlength="18" autocomplete="off" aria-label="计数器名称">
       <input id="dialogValueInput" type="number" step="1" inputmode="numeric" placeholder="数字" aria-label="明细数字" hidden>
@@ -869,7 +888,8 @@
         <button class="secondary" id="cancelDialog" type="button">取消</button>
         <button class="primary" id="submitDialog" type="submit">完成</button>
       </div>
-    </form>
+      </form>
+    </dialog>
   </main>
 
   <script>
@@ -904,6 +924,7 @@
       counterSheet: document.querySelector("#counterSheet"),
       counterList: document.querySelector("#counterList"),
       nameDialog: document.querySelector("#nameDialog"),
+      dialogForm: document.querySelector("#dialogForm"),
       dialogTitle: document.querySelector("#dialogTitle"),
       dialogMessage: document.querySelector("#dialogMessage"),
       dialogInput: document.querySelector("#dialogInput"),
@@ -1010,7 +1031,14 @@
       els.counterSheet.classList.remove("open");
     }
 
+    function positionDialog() {
+      const viewport = window.visualViewport;
+      els.nameDialog.style.setProperty("--dialog-viewport-top", `${viewport?.offsetTop || 0}px`);
+      els.nameDialog.style.setProperty("--dialog-viewport-height", `${viewport?.height || window.innerHeight}px`);
+    }
+
     function openDialog(mode, item = null) {
+      clearTimeout(valueHoldTimer);
       dialogMode = mode;
       editingId = item?.id || null;
       els.dialogMessage.hidden = true;
@@ -1043,17 +1071,13 @@
         els.dialogInput.inputMode = "text";
         els.dialogInput.ariaLabel = "计数器名称";
       }
-      els.nameDialog.classList.add("open");
-      if (!els.dialogInput.hidden) {
-        setTimeout(() => {
-          els.dialogInput.focus();
-          els.dialogInput.select();
-        }, 40);
-      }
+      positionDialog();
+      if (!els.nameDialog.open) els.nameDialog.showModal();
+      els.dialogTitle.focus({ preventScroll: true });
     }
 
     function closeDialog() {
-      els.nameDialog.classList.remove("open");
+      if (els.nameDialog.open) els.nameDialog.close();
       editingId = null;
     }
 
@@ -1199,7 +1223,7 @@
       const activeDetail = currentDetail(active);
       const activeIndex = state.counters.findIndex((counter) => counter.id === active.id) + 1;
 
-      els.nameInput.value = active.name;
+      els.nameInput.textContent = active.name;
       els.counterIndex.textContent = `${activeIndex} / ${state.counters.length}`;
       els.countValue.textContent = active.value;
       fitCountValue();
@@ -1346,6 +1370,9 @@
     });
 
     window.addEventListener("resize", fitCountValue);
+    window.addEventListener("resize", positionDialog);
+    window.visualViewport?.addEventListener("resize", positionDialog);
+    window.visualViewport?.addEventListener("scroll", positionDialog);
     ["pointerup", "pointercancel", "pointerleave"].forEach((eventName) => {
       els.countValue.addEventListener(eventName, () => clearTimeout(valueHoldTimer));
     });
@@ -1359,16 +1386,20 @@
     els.sheetBackdrop.addEventListener("click", closeSheet);
     els.addCounter.addEventListener("click", () => openDialog("create"));
     els.cancelDialog.addEventListener("click", closeDialog);
-    els.nameInput.addEventListener("change", () => renameCounter(currentCounter().id, els.nameInput.value));
-    els.nameInput.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        els.nameInput.blur();
+    els.nameInput.addEventListener("click", () => openDialog("rename", currentCounter()));
+
+    els.dialogForm.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" || event.isComposing || !event.target.matches("input")) return;
+      event.preventDefault();
+      if (dialogMode === "edit-detail" && event.target === els.dialogInput) {
+        els.dialogValueInput.focus({ preventScroll: true });
+        els.dialogValueInput.select();
       }
     });
 
-    els.nameDialog.addEventListener("submit", (event) => {
+    els.dialogForm.addEventListener("submit", (event) => {
       event.preventDefault();
+      if (event.submitter !== els.submitDialog) return;
       if (dialogMode === "rename") {
         renameCounter(editingId, els.dialogInput.value);
       } else if (dialogMode === "edit-detail") {
@@ -1384,6 +1415,11 @@
       closeSheet();
     });
 
+    els.nameDialog.addEventListener("cancel", (event) => {
+      event.preventDefault();
+      closeDialog();
+    });
+
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
         closeDialog();
@@ -1396,13 +1432,8 @@
     });
 
     if ("serviceWorker" in navigator) {
-      const hadServiceWorkerController = Boolean(navigator.serviceWorker.controller);
-      let refreshedForUpdate = false;
-
       navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (!hadServiceWorkerController || refreshedForUpdate) return;
-        refreshedForUpdate = true;
-        window.location.reload();
+        navigator.serviceWorker.controller?.postMessage({ type: "CACHE_OFFLINE_PAGE" });
       });
 
       window.addEventListener("load", () => {
